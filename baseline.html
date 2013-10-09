@@ -1,0 +1,278 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Baseline Design &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="index.html" />
+    <link rel="next" title="Future Modeling Road Map" href="future.html" />
+    <link rel="prev" title="Usage Example" href="usage.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="future.html" title="Future Modeling Road Map"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage Example"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="baseline-design">
+<h1>Baseline Design<a class="headerlink" href="#baseline-design" title="Permalink to this headline">¶</a></h1>
+<p>The modeling done identifies a number of high level trends and provides some concrete
+baseline numbers for the hyperloop concept. For the most part, the ideas and numbers given
+in the original hyperloop proposal hold up using this analysis. However, the data shows that
+there are two major changes to the design that need to be considered.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The tube will need to be significantly larger than the original proposal. In the
+original proposal, the tube was sized with a diameter 2.23 meters. However, it
+appears that it will need to have a diameter closer to 4 meters.</li>
+<li>On-board water based intercoolers are impractical due to volume and weight constraints.
+This may prove to be a non-issue since temperature rise due to compression is less
+significant than originally estimated and only leads to a modest rise in steady-state
+tube temperature. Assuming the tube was left uncovered, the heat rate from solar radiation
+would be an order of magnitude larger than the heat rate added from pod compression systems.
+Further assuming a 90 degF day, radiation and convection out of the tube would lead to a
+manageable steady state tube wall temperature of 120 degF.</li>
+</ol>
+</div></blockquote>
+<div class="section" id="tube-diameter">
+<h2>Tube Diameter<a class="headerlink" href="#tube-diameter" title="Permalink to this headline">¶</a></h2>
+<p>The hyperloop pod travels through a fixed diameter tube. As it travels,
+it must displace air around itself. The displaced air moves past the
+pod with a relative velocity equal to the travel speed of the pod and
+must fit into the area between the pod and the tube wall. If you assume
+a circular cross section for the pod, then the area for the air to
+travel through is given by</p>
+<div class="math">
+\[A_{bypass} = \pi(r_{tube}^2-r_{pod}^2)\]</div>
+<p>Given the conditions in the tube, we know the density of air to be
+0.00118 <span class="math">\(\frac{kg}{m^3}\)</span>. The mass flow rate of the air
+bypassing the pod is then given by</p>
+<div class="math">
+\[\dot{W}_{bypass} = \rho_{air} A_{tube} V_{pod}\]</div>
+<p>Since <span class="math">\(\rho_{air}\)</span> and <span class="math">\(A_{tube}\)</span> are both constant for given tube size
+and pressure, mass flow rate grows linearly with the velocity of the pod.</p>
+<p>For any given flow there is a physical limitation to how the amount of
+flow you can pass through a given area. The maximum flow rate occurs when
+the velocity reaches Mach 1. For the hyperloop concept, all the air must fit
+through the area between the pod and the tube, called <span class="math">\(A_{bypass}\)</span>. When
+the air going through <span class="math">\(A_{bypass}\)</span> reaches Mach 1, no additional flow can pass through.</p>
+<div class="math">
+\[\dot{W}_{limit} = \rho_{air} A_{bypass} V_{Mach 1}\]</div>
+<p>If the required  <span class="math">\(\dot{W}_{bypass}\)</span> exceeds <span class="math">\(\dot{W}_{limit}\)</span>, then the pod will
+act like a piston in a tube and start the increase the air pressure in front
+of it and lower the pressure behind it. For the baseline hyperloop design,
+the limit speed is around 120 <span class="math">\(\frac{m}{s}\)</span>, or Mach .3, as shown in the
+figure below in the blue lines. The limit is reached when the required tube mass flow equals
+the kantrowitz limit flow. The value of this limit speed is strongly dependent on the
+ratio of the pod diameter to the tube diameter.</p>
+<div class="figure align-center">
+<img alt="hyperloop tube limits" src="images/tube_flow_limits.png" style="width: 800px;" />
+<p class="caption">Hyperloop speed limits as a function of tube radius</p>
+</div>
+<p>Such low speeds would not allow the hyperloop concept to significantly reduce
+travel times between Los Angeles and San Francisco. To reach higher speeds,
+a compression system is needed to help push additional air around the pod
+to enable higher travel speeds. The amount of air that the compression system needs
+to move is equal to the difference between the required tube flow (the solid lines)
+and the limit (the dashed lines). As speed increases, the flow demands on the
+compression system increase as well.</p>
+<p>The challenge is that when you increase the flow demands on the compression system, you
+also force the pod diameter to grow in order to handle the increased flow. So traveling
+faster means that the mass flow requirements grow, which drives the pod diameter up, which
+further increase the mass flow requirements. The only way to damp out this cycle is to allow
+the tube diameter to grow as you increase the maximum velocity. The model set up here converges
+on the minimal possible tube diameter, given a desired pod Mach number.</p>
+<div class="figure align-center">
+<img alt="mach versus tube radius graph" src="images/mach_vs_rad.png" style="width: 800px;" />
+</div>
+<p>The data shows that above Mach .85, the minimum allowable tube size gets very sensitive to
+pod travel speed. This indicates that Mach numbers much higher than about .9 are likely not
+feasible. Even at a Mach .8, the tube diameter still needs to be around 4 meters. This is twice
+the size considered in the original proposal. At Mach .8 the travel time is around 45 minutes.
+Although this performance is less than described in the original proposal, it still represents
+an improvement over what can be achieved with a high speed rail.</p>
+</div>
+<div class="section" id="capsule-cooling-requirements">
+<span id="cooling"></span><h2>Capsule Cooling Requirements<a class="headerlink" href="#capsule-cooling-requirements" title="Permalink to this headline">¶</a></h2>
+<p>The limits and requirements of a hypothtical on-board heat exchanger can be estimated with a straightforward energy balance.
+The effectiveness of a heat exchanger can be described as the ratio of actual heat transfer over the maximum
+possible heat transfer. This can be written mathematically as,</p>
+<div class="math">
+\[{Q}_{released}  = effectiveness * {Q}_{max}\]</div>
+<p>where <span class="math">\({Q}_{max} = (T_{hot,in} - T_{cold,in}) {\big[ \dot{m}_{fluid} C_{p,fluid} \big]}_{lowest}\)</span> with whichever fluid has the lowest product of <span class="math">\(\dot{m}_{fluid}  C_{p,fluid}\)</span></p>
+<p>In order to satisfy the energy balance <span class="math">\({Q}_{released}  = {Q}_{absorbed}\)</span> , the following must be true,</p>
+<div class="math">
+\[\dot{m}_{air} C_{p, air} (T_{out, air} - T_{in, air}) = {Q}_{released} = {Q}_{absorbed}= \dot{m}_{water} C_{p,water} (T_{out, water} - T_{in, water})\]</div>
+<p>where the <span class="math">\(T_{out}\)</span> of each fluid is unknown. With assumed massflow rates and initial temperatures, a valid combination of <span class="math">\(T_{out}\)</span>&#8216;s of each fluid can be found through solver iteration. Valid effectiveness levels for heat exchangers can be determined based on the E- <a class="reference external" href="http://en.wikipedia.org/wiki/NTU_method">NTU method.</a>.</p>
+<p>The effectiveness for a counter flow heat exchanger with a Cmin/Cmax of ~0.25 was chosen</p>
+<div class="figure align-center">
+<img alt="Heat Exchanger Effictiveness Graph" src="images/heat_effectiveness.png" />
+</div>
+<p>Image from <a class="reference external" href="http://www.cheresources.com/content/articles/heat-transfer/heat-exchanger-effectiveness">http://www.cheresources.com/content/articles/heat-transfer/heat-exchanger-effectiveness</a></p>
+<p>The following conditions satisfied an energy balance with an assumed effectiveness of 0.9765, and the proposed requirement to
+cool the air completely down to inlet temperatures.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="14%" />
+<col width="15%" />
+<col width="17%" />
+<col width="17%" />
+<col width="18%" />
+<col width="9%" />
+<col width="9%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Fluid</th>
+<th class="head">Cp</th>
+<th class="head"><span class="math">\({T}_{in}\)</span></th>
+<th class="head"><span class="math">\({T}_{out}\)</span></th>
+<th class="head"><span class="math">\(\dot{m}\)</span></th>
+<th class="head">Q  kJ/s</th>
+<th class="head">Q  max</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Air</td>
+<td>1.006 kJ/kg-K</td>
+<td>791 K</td>
+<td>300 K</td>
+<td>0.49 kg/s</td>
+<td>-242</td>
+<td>247.9</td>
+</tr>
+<tr class="row-odd"><td>Water</td>
+<td>4.186 kJ/kg-K</td>
+<td>288.15 K</td>
+<td>416.6 K</td>
+<td>0.45 kg/s</td>
+<td>242</td>
+<td>247.9</td>
+</tr>
+</tbody>
+</table>
+<p>With a 35 minute trip, <span class="math">\(0.45 kg/s * 60 s/min * 35 min =  945 kg\)</span> of standard temperature/pressure water would
+need to be carried with appropriate sized steam tanks. This doesn&#8217;t even account for the second stage heat exchanger,
+making the system nearly infeasible with water and unpressurized tanks. Various systems involving alternate coolants
+such as liquid air or pressurized tanks could be explored.</p>
+<p>Further discussion of heat exchanger sizing and tube equilibrium temperature can be found in the
+<a class="reference internal" href="modeling.html#tubetemp"><em>Tube Temperature</em></a> section of the &#8216;Subsystem Modeling Theory&#8217; chapter of the docs.</p>
+</div>
+<div class="section" id="sensitivity">
+<h2>Sensitivity<a class="headerlink" href="#sensitivity" title="Permalink to this headline">¶</a></h2>
+<div class="figure align-center">
+<img alt="mach versus battery energy graph" src="images/mach_vs_energy.png" style="width: 800px;" />
+<p class="caption">Hyperloop speed limits as a function of tube radius</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Baseline Design</a><ul>
+<li><a class="reference internal" href="#tube-diameter">Tube Diameter</a></li>
+<li><a class="reference internal" href="#capsule-cooling-requirements">Capsule Cooling Requirements</a></li>
+<li><a class="reference internal" href="#sensitivity">Sensitivity</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="usage.html"
+                        title="previous chapter">Usage Example</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="future.html"
+                        title="next chapter">Future Modeling Road Map</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/baseline.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="future.html" title="Future Modeling Road Map"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage Example"
+             >previous</a> |</li>
+        <li><a href="index.html">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

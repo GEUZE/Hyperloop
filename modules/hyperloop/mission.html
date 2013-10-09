@@ -1,0 +1,161 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>hyperloop.mission &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for hyperloop.mission</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span>
+
+
+<span class="c">#speed profile data from hyperloop alpha proposal, pg 43</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+    <span class="p">[</span><span class="mf">12.5</span><span class="p">,</span> <span class="mi">300</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">165</span><span class="p">,</span> <span class="mi">300</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">182</span><span class="p">,</span> <span class="mi">555</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">427</span><span class="p">,</span> <span class="mi">555</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">444</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1660</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1670</span><span class="p">,</span> <span class="mi">555</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1756</span><span class="p">,</span> <span class="mi">555</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">1765</span><span class="p">,</span> <span class="mi">300</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">2112</span><span class="p">,</span> <span class="mi">299</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">2132</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+
+<span class="n">max_speed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">/=</span> <span class="n">max_speed</span> <span class="c">#Normalize data</span>
+
+<span class="n">max_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">/=</span> <span class="n">max_time</span> <span class="c">#Normalize data</span>
+
+<span class="c">#integrate normalized data to get an average speed fraction relative to the max speed</span>
+<span class="n">SPEED_FRAC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="Mission"><a class="viewcode-back" href="../../srcdocs.html#hyperloop.mission.Mission">[docs]</a><span class="k">class</span> <span class="nc">Mission</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span> 
+    <span class="sd">&quot;&quot;&quot;Place holder for real mission analysis. Could consider a </span>
+<span class="sd">    pseudospectral optimal control approach&quot;&quot;&quot;</span> 
+    <span class="c">#Inputs</span>
+    <span class="n">speed_max</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">308</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Maximum travel speed for the pod&quot;</span><span class="p">)</span>
+    <span class="n">tube_length</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">563270</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;length of one trip&quot;</span><span class="p">)</span>
+    <span class="n">pwr_marg</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;fractional extra energy requirement&quot;</span><span class="p">)</span>
+    <span class="n">pwr_req</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">420</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kW&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;average power requriment for the mission&quot;</span><span class="p">)</span>
+    <span class="c">#Outputs</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;s&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;travel time for a pod to make one trip&quot;</span><span class="p">)</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kW*h&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;total energy storage requirements&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Mission.execute"><a class="viewcode-back" href="../../srcdocs.html#hyperloop.mission.Mission.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;this is a *VERY* course approximation that takes the speed profile given in the </span>
+<span class="sd">        original proposal as given. It just serves as a place holder for now. It&#39;s better </span>
+<span class="sd">        than nothing, but a real analysis is needed here&quot;&quot;&quot;</span> 
+
+        <span class="n">avg_speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_max</span><span class="o">*</span><span class="n">SPEED_FRAC</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tube_length</span><span class="o">/</span><span class="n">avg_speed</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pwr_req</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">/</span><span class="mf">3600.</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">pwr_marg</span><span class="p">)</span> <span class="c">#convert to hours</span>
+
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">itername</span> 
+        <span class="k">print</span> <span class="s">&quot; W_in: &quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">compress</span><span class="o">.</span><span class="n">W_in</span><span class="p">,</span> <span class="mi">10</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">compress</span><span class="o">.</span><span class="n">W_in</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">flow_limit</span><span class="o">.</span><span class="n">W_excess</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot; R_tube:  &quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">pod</span><span class="o">.</span><span class="n">radius_tube_inner</span><span class="p">,</span> <span class="o">.</span><span class="mo">01</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">pod</span><span class="o">.</span><span class="n">area_compressor_bypass</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">compress</span><span class="o">.</span><span class="n">area_c1_out</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot; Bearing_Ps:  &quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">compress</span><span class="o">.</span><span class="n">c2_PR_des</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">compress</span><span class="o">.</span><span class="n">Ps_bearing_residual</span>
+        <span class="k">print</span> 
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span> 
+
+    <span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">set_as_top</span>
+
+    <span class="n">m</span> <span class="o">=</span> <span class="n">set_as_top</span><span class="p">(</span><span class="n">Mission</span><span class="p">())</span>
+    <span class="n">m</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

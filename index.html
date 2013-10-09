@@ -1,0 +1,211 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="#" />
+    <link rel="next" title="Model Layout" href="io.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="io.html" title="Model Layout"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>This is the documentation for a hyperloop optimization framework, which can be found
+in this <a class="reference external" href="https://github.com/OpenMDAO-Plugins/Hyperloop">github repository</a>.</p>
+<p>The hyperloop concept is a proposed transportation system that could offer lower costs and
+travel times relative to California&#8217;s current high speed rail project. The design consists
+of a passenger pod traveling in a tube under light vacuum at near sonic speeds. Propulsion
+is provided via linear accelerators mounted on the tube itself and the pod rides on a set
+of air bearings. The speed of the capsule is limited by the ability of air to escape around
+the outside of the vehicle, therefore a compression system is used to draw air through the
+vehicle. Compressing the air allows the capsule to reach higher speeds and also provides
+the air bearings with the necessary pressure. Many of these different sub-systems interact
+with each other and an effective hyperloop system will need to balance multiple trade-offs.</p>
+<div class="figure align-center">
+<img alt="hyperloop re-designed inlet" src="images/hyperloop.png" style="width: 800px;" />
+<p class="caption">Calculated baseline hyperloop dimensions for a capsule speed of Mach 0.8, rendered in OpenCSM a parametric solid modeler.</p>
+</div>
+<p>We propose the design of the hyperloop should be taken from a systems perspective with
+the dual objectives of minimizing ticket cost and minimizing travel time. In order to achieve
+this goal we propose a top down design approach where the designs of all components
+are optimized simultaneously with respect to the overall system goals.</p>
+<p>An overarching framework is needed to orchestrate the interaction between models of
+various subsystems and perform the necessary optimization. This code base contains a hyperloop
+system model built by a handful of engineers and computer scientists as an <a class="reference external" href="http://openmdao.org/">OpenMDAO.</a>
+plugin. The intention is to provide this code as a baseline for further public
+contribution to support an open source hyperloop design. Interested parties should feel free
+to modify the code as they see fit and improve the models in areas where they have expertise.</p>
+</div>
+<div class="section" id="contents">
+<h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="io.html">Model Layout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="io.html#inputs-and-outputs">Inputs and Outputs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="io.html#design-variables">Design Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="io.html#model-parameters">Model Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="io.html#constraints-and-state-variables">Constraints and State Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="io.html#outputs">Outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="baseline.html">Baseline Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="baseline.html#tube-diameter">Tube Diameter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="baseline.html#capsule-cooling-requirements">Capsule Cooling Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="baseline.html#sensitivity">Sensitivity</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="future.html">Future Modeling Road Map</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="future.html#system-design-optimization">System Design Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#battery-and-motors">Battery and Motors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#air-bearings">Air Bearings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#vacuum-pumps">Vacuum Pumps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#solar-power-generation">Solar Power Generation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#pod-structural-design">Pod Structural Design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#component-mass-estimation">Component Mass Estimation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#linear-accelerators">Linear Accelerators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="future.html#route-optimization">Route Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Code Contribution</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#coding-conventions">Coding Conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modeling.html">Subsystem Modeling Theory</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modeling.html#compression-system">Compression System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling.html#battery-pack">Battery Pack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modeling.html#tube-temperature">Tube Temperature</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="srcdocs.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.aero">aero.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.api">api.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.cycle.compression_system">compression_system.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.cycle.heat_exchanger">heat_exchanger.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.cycle.heat_exchanger_sizing">heat_exchanger_sizing.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.cycle.pump">pump.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.geometry.air_bearing">air_bearing.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.geometry.battery">battery.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.geometry.inlet">inlet.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.geometry.passenger_capsule">passenger_capsule.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.geometry.pod">pod.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.geometry.tube_structure">tube_structure.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.hyperloop_sim">hyperloop_sim.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.mission">mission.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.test.test_tube_temp">test_tube_temp.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.tube_limit_flow">tube_limit_flow.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="srcdocs.html#module-hyperloop.tube_wall_temp">tube_wall_temp.py</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pkgdocs.html">Package Metadata</a></li>
+</ul>
+</div>
+<p>The hyperloop github repository and installation instructions can be found here: <a class="reference external" href="https://github.com/OpenMDAO-Plugins/Hyperloop">https://github.com/OpenMDAO-Plugins/Hyperloop</a>.</p>
+<p>The original hyperloop proposal can be found here: <a class="reference external" href="http://www.spacex.com/hyperloop">Hyperloop-Alpha</a>.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction</a></li>
+<li><a class="reference internal" href="#contents">Contents</a><ul>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="io.html"
+                        title="next chapter">Model Layout</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="io.html" title="Model Layout"
+             >next</a> |</li>
+        <li><a href="#">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,350 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Model Layout &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="index.html" />
+    <link rel="next" title="Usage Example" href="usage.html" />
+    <link rel="prev" title="Introduction" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage Example"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="model-layout">
+<h1>Model Layout<a class="headerlink" href="#model-layout" title="Permalink to this headline">¶</a></h1>
+<p>The model is broken down into 5 major sub-systems:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><strong>Compression System (compress)</strong>: Performance and power consumption of the compressors</li>
+<li><strong>Mission Analysis (mission)</strong>: Estimate of travel time</li>
+<li><strong>Pod Geometry (pod)</strong>: Physical Dimensions and calculations that depend on them</li>
+<li><strong>Tube Flow Limitations (flow_limit)</strong>: Pod speed limitations based on choked flow restrictions between the pod and the tube</li>
+<li><strong>Tube Wall Temperature (tube_wall_temp)</strong>: Equilibrium temperature of the tube wall</li>
+</ol>
+</div></blockquote>
+<div class="figure align-center">
+<img alt="Hyperloop assembly XDSM chart" src="images/hyperloop_assembly_xdsm.png" />
+<p class="caption">The overall layout of the hyperloop assembly and the connections between the components.</p>
+</div>
+<p>The compression system and pod geometry sub-systems are further broken down into sub assemblies.</p>
+<div class="figure align-center">
+<img alt="Pod assembly XDSM diagram" src="images/pod_assembly_xdsm.png" />
+<p class="caption">The expanded layout of the pod sub-assembly.</p>
+</div>
+<div class="figure align-center">
+<img alt="Compress assembly XDSM diagram" src="images/compress_assembly_xdsm.png" />
+<p class="caption">The expanded layout of the pod sub-assembly.</p>
+</div>
+</div>
+<div class="section" id="inputs-and-outputs">
+<h1>Inputs and Outputs<a class="headerlink" href="#inputs-and-outputs" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Before describing the I/O of the model, note that this list represents the current state
+of the model. In its current form, this model is far from complete and as new analyses are added
+additional design variables and couplings will need to be added to this list.</p>
+</div>
+<div class="section" id="design-variables">
+<h2>Design Variables<a class="headerlink" href="#design-variables" title="Permalink to this headline">¶</a></h2>
+<p>The model has the following design variables:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="40%" />
+<col width="6%" />
+<col width="12%" />
+<col width="12%" />
+<col width="12%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Variable</th>
+<th class="head">Description</th>
+<th class="head">Units</th>
+<th class="head">Baseline Value</th>
+<th class="head">Min.</th>
+<th class="head">Max.</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Mach_bypass</td>
+<td>Mach number of the air traveling around the pod</td>
+<td>&nbsp;</td>
+<td>.95</td>
+<td>.5</td>
+<td>.98</td>
+</tr>
+<tr class="row-odd"><td>Mach_pod_max</td>
+<td>Maximum travel Mach number of the pod</td>
+<td>&nbsp;</td>
+<td>.9</td>
+<td>.5</td>
+<td>.98</td>
+</tr>
+<tr class="row-even"><td>Mach_c1_in</td>
+<td>Mach number of the air at the back of the inlet</td>
+<td>&nbsp;</td>
+<td>.6</td>
+<td>.5</td>
+<td>.8</td>
+</tr>
+<tr class="row-odd"><td>Ps_tube</td>
+<td>Static pressure of the air in the tube</td>
+<td>Pa</td>
+<td>99</td>
+<td>99</td>
+<td>500</td>
+</tr>
+<tr class="row-even"><td>c1_PR_des</td>
+<td>First compressor pressure ratio</td>
+<td>&nbsp;</td>
+<td>12.47</td>
+<td>10</td>
+<td>25</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="model-parameters">
+<h2>Model Parameters<a class="headerlink" href="#model-parameters" title="Permalink to this headline">¶</a></h2>
+<p>These values are free for the user to set, but are not intended for the optimizer.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="43%" />
+<col width="6%" />
+<col width="11%" />
+<col width="11%" />
+<col width="11%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Variable</td>
+<td>Description</td>
+<td>Units</td>
+<td>Baseline Value</td>
+<td>Min.</td>
+<td>Max.</td>
+</tr>
+<tr class="row-even"><td>pwr_marg</td>
+<td>Safety factor applied to the power requirement for the pod</td>
+<td>&nbsp;</td>
+<td>.3</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr class="row-odd"><td>solar_heating_factor</td>
+<td>Fraction of solar radiation to consider in tube temperature</td>
+<td>&nbsp;</td>
+<td>.7</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="row-even"><td>tube_length</td>
+<td>Length of the tube</td>
+<td>m</td>
+<td>563270</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+<tr class="row-odd"><td>n_rows</td>
+<td>Number of rows of seats in the passenger capsule</td>
+<td>&nbsp;</td>
+<td>14</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>length_row</td>
+<td>Length alloted to each row of seats</td>
+<td>cm</td>
+<td>150</td>
+<td>120</td>
+<td>200</td>
+</tr>
+<tr class="row-odd"><td>coef_drag</td>
+<td>Drag coefficient for the pod</td>
+<td>&nbsp;</td>
+<td>2</td>
+<td>.6</td>
+<td>2.5</td>
+</tr>
+<tr class="row-even"><td>hub_to_tip</td>
+<td>Ratio of hub radius to tip radius for the first compressor</td>
+<td>&nbsp;</td>
+<td>.4</td>
+<td>.2</td>
+<td>.6</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="constraints-and-state-variables">
+<h2>Constraints and State Variables<a class="headerlink" href="#constraints-and-state-variables" title="Permalink to this headline">¶</a></h2>
+<p>The hyperloop system presents a multidisciplinary design problem. The cyclic connections in
+the above figure represent the coupling relationships between the different sub-systems. These
+couplings enforce a set of equality constraints that must be satisfied for any valid hyperloop
+design. For constraints 1 and 4, a multiplier has been applied to the constraint to scale it for
+improved numerical convergence.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><tt class="docutils literal"><span class="pre">0.01*(compress.W\_in</span> <span class="pre">-</span> <span class="pre">flow\_limit.W_excess)</span> <span class="pre">=</span> <span class="pre">0</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">compress.Ps\_bearing\_residual</span> <span class="pre">=</span> <span class="pre">0</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">tube\_wall\_temp.ss\_temp\_residual</span> <span class="pre">=</span> <span class="pre">0</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">0.01*(pod.area\_compressor\_bypass</span> <span class="pre">-</span> <span class="pre">compress.area\_c1\_out)</span> <span class="pre">=</span> <span class="pre">0</span></tt></li>
+</ol>
+</div></blockquote>
+<p>The model has a set of state variables that are varied to satisfy the constraints. State variables
+3 and 4 are given as a list of variables. These are lists represent linked variables. They are treated
+as a single variable for the purposes of converging the model, but remain distinct variables in the model.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><tt class="docutils literal"><span class="pre">compress.W_in</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">compress.c2_PR_des</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">(compress.Ts_tube,flow_limit.Ts_tube,tube_wall_temp.temp_boundary)</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">(flow_limit.radius_tube,</span> <span class="pre">pod.radius_tube_inner)</span></tt></li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="outputs">
+<h2>Outputs<a class="headerlink" href="#outputs" title="Permalink to this headline">¶</a></h2>
+<p>There are a number of output values that are of interest</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Overall pod radius: <tt class="docutils literal"><span class="pre">pod.radius_inlet_outer</span></tt></li>
+<li>Total mass flow through the compression system: <tt class="docutils literal"><span class="pre">compress.W_in</span></tt></li>
+<li>Total power required to drive the compression system: <tt class="docutils literal"><span class="pre">compress.pwr_req</span></tt></li>
+<li>Total energy needed to power the compression system for one trip: <tt class="docutils literal"><span class="pre">mission.energy</span></tt></li>
+<li>Travel time for one trip: <tt class="docutils literal"><span class="pre">mission.time</span></tt></li>
+<li>Maximum speed: <tt class="docutils literal"><span class="pre">compress.speed_max</span></tt></li>
+<li>Equilibrium tube temperature: <tt class="docutils literal"><span class="pre">tube_wall_temp.temp</span></tt></li>
+</ol>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For a more complete design process, the values of the design variables would be optimized
+to minimize a combination of total power consumption and travel time. However, the model does
+not currently calculate some key values needed to get a useful answer. In particular, the linear
+accelerator and vacuum pump power needs to be modeled before a
+design optimization can be attempted.</p>
+</div>
+<p>It should be noted that you can select designs that are not realistic, particularly with respect
+to <tt class="docutils literal"><span class="pre">pod.radius_inlet_outer</span></tt>. There is a strong relationship between <tt class="docutils literal"><span class="pre">Mach_pod_max</span></tt> and the <tt class="docutils literal"><span class="pre">pod.radius_inlet_outer</span></tt>.
+If you select a high <tt class="docutils literal"><span class="pre">Mach_pod_max</span></tt> (Above .8), you may find that the radius has shrunk below what is physically
+feasible without significant design changes.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Model Layout</a></li>
+<li><a class="reference internal" href="#inputs-and-outputs">Inputs and Outputs</a><ul>
+<li><a class="reference internal" href="#design-variables">Design Variables</a></li>
+<li><a class="reference internal" href="#model-parameters">Model Parameters</a></li>
+<li><a class="reference internal" href="#constraints-and-state-variables">Constraints and State Variables</a></li>
+<li><a class="reference internal" href="#outputs">Outputs</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="usage.html"
+                        title="next chapter">Usage Example</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/io.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage Example"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,242 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Future Modeling Road Map &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="index.html" />
+    <link rel="next" title="Code Contribution" href="contribute.html" />
+    <link rel="prev" title="Baseline Design" href="baseline.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="contribute.html" title="Code Contribution"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="baseline.html" title="Baseline Design"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="future-modeling-road-map">
+<h1>Future Modeling Road Map<a class="headerlink" href="#future-modeling-road-map" title="Permalink to this headline">¶</a></h1>
+<p>The current model of the hyperloop focuses on some of the primary sub-systems that operate within the pod.
+However, there is much more analysis that needs to be done to build a complete hyperloop model. Below provides
+a brief summary of the areas we feel represent the logical next steps for the engineering aspects of the analysis.</p>
+<div class="section" id="system-design-optimization">
+<h2>System Design Optimization<a class="headerlink" href="#system-design-optimization" title="Permalink to this headline">¶</a></h2>
+<p>The current baseline appears to be a feasible design, but the design space is large (and will grow with additional
+models) and needs to be more fully explored. Overall, the goal of the hyperloop design should be to find the right
+compromise between maximum passenger throughput, minimum travel time, and minimum cost per trip. The following are
+some major open questions about the hyperloop design space:</p>
+<p>1) What is the relationship between overall energy usage and tube pressure? Would a slightly higher pressure lower
+the overall energy consumption by reducing vacuum pump effort more than it increases power requirements for the pod?</p>
+<p>2) What is the best combination of pressure ratios for the compression system? Does the bypass air need to be
+pressurized so highly?</p>
+<p>3) What is the best size for the tube diameter? Larger diameters will increase pump effort, but decrease pod power
+usage? Could a larger diameter coupled with a slightly higher pressure provide superior performance?</p>
+</div>
+<div class="section" id="geometry">
+<h2>Geometry<a class="headerlink" href="#geometry" title="Permalink to this headline">¶</a></h2>
+<p>This model makes some simple geometric calculations, however a real parametric geometry model
+needs to be included. This model is necessary to properly consider the layout and packaging issues
+involved in the design, but it also needed to do more complete structural analyses on the
+pressurized containers as well as to do an aerodynamic shape optimization of the outer shape.</p>
+<p>Some alternate configurations could possibly considered as well. Although the length of the capsule
+would grow by a factor of almost 2, it might be possible to put the seats in a single file
+layout to reduce the overall tube dimensions. The effect of this change on the overall system
+is not obvious and needs to be studied.</p>
+<p>The geometry model needs to be built in an open source geometry system so that it can be freely
+shared with the rest of the model.</p>
+</div>
+<div class="section" id="battery-and-motors">
+<h2>Battery and Motors<a class="headerlink" href="#battery-and-motors" title="Permalink to this headline">¶</a></h2>
+<p>The initial estimates of battery size and weight rely on ridiculously simple calculations. As noted, the power requirements
+amount to roughly 3 to 5 battery packs from a Tesla Model-S. Much better weight and size estimates for these off-the-shelf
+batteries need to be integrated.</p>
+<p>No work has been done to size the motors or account for any cooling requirements they might need. Although the current results
+indicate that a cooling system for the compressed air is not needed, you may still need something to cool the batteries and motors.
+The power requirements, weight, and space needs of such cooling systems needs to be considered.</p>
+</div>
+<div class="section" id="air-bearings">
+<h2>Air Bearings<a class="headerlink" href="#air-bearings" title="Permalink to this headline">¶</a></h2>
+<p>The current models assume a fixed mass flow requirement for the air bearing system. A more accurate model would account
+for the overall weight of the pod, the pressure of the air, and the overall bearing size. A more detailed bearing model
+should be coupled to the compression system model to ensure a feasible design is achieved.</p>
+<p>In addition, some investigations need to be made into the lower speed operation of the pod. It&#8217;s possible that splitting
+the compression system into two independent paths would be beneficial, if the bearings require a relatively constant mass
+flow rate and pressure, because it would allow a more flexible operation of what is currently the first stage compressor.</p>
+</div>
+<div class="section" id="vacuum-pumps">
+<h2>Vacuum Pumps<a class="headerlink" href="#vacuum-pumps" title="Permalink to this headline">¶</a></h2>
+<p>The current model indicates that a tube with around a 4 meter diameter will be needed to reach
+the high velocities to keep the travel time to around 35 minutes. The size of the tubes will
+impact to key power requirements for the vaccum pumps:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The peak power requirements to pump the tubes down in a reasonable time</li>
+<li>The steady state power requirements to maintain the high vaccum in the tube</li>
+</ol>
+</div></blockquote>
+<p>Both of these aspects need to be modeled and incorporated into the system models.</p>
+</div>
+<div class="section" id="solar-power-generation">
+<h2>Solar Power Generation<a class="headerlink" href="#solar-power-generation" title="Permalink to this headline">¶</a></h2>
+<p>One of the proposed features of the hyperloop concept is its near net-zero energy
+consumption, via the inclusion of solar panels along the length of the tubes.
+Models are needed to predict, based on geographical location, weather, and time of year,
+how much power could be produced on an ongoing basis from such a solar panel system.</p>
+<p>The power production and power consumption of the hyperloop system need to be compared.
+Even assuming you can reach a net zero energy usage on an average basis, the timing of the
+production and consumption has a strong impact on how much energy storage is necessary in
+the overall system. This will have an impact on it&#8217;s overall cost.</p>
+</div>
+<div class="section" id="pod-structural-design">
+<h2>Pod Structural Design<a class="headerlink" href="#pod-structural-design" title="Permalink to this headline">¶</a></h2>
+<p>The passenger pod is, from a structural perspective, a pressure vessel experiencing a fairly
+pressure ratio of around 1000. The original design concept calls for a non-circular pressure
+vessel which raises some structural design issues. It&#8217;s possible to design an effective structure
+using modern aircraft grade composites technologies, but it&#8217;s possible that a round cross section
+could allow for a more traditional construction and reduce costs. Structural models considering
+composites and metallic construction are needed.</p>
+</div>
+<div class="section" id="component-mass-estimation">
+<h2>Component Mass Estimation<a class="headerlink" href="#component-mass-estimation" title="Permalink to this headline">¶</a></h2>
+<p>The current model does not include any significant weight estimation. Every part of the model
+needs to have weight estimates added.</p>
+</div>
+<div class="section" id="linear-accelerators">
+<h2>Linear Accelerators<a class="headerlink" href="#linear-accelerators" title="Permalink to this headline">¶</a></h2>
+<p>These are not considered at all currently. However, they will obviously need to be modeled
+as part of the mission analysis work.</p>
+</div>
+<div class="section" id="route-optimization">
+<h2>Route Optimization<a class="headerlink" href="#route-optimization" title="Permalink to this headline">¶</a></h2>
+<p>The current mission analysis takes the velocity profile in the original proposal as a
+given. We normalize this profile in both time and velocity, then integrate it. This gives
+a speed factor of about .8. So for any given maximum velocity, the average velocity would
+be about 80% of it.</p>
+<p>While this simple method provides some basic dependence of travel time on overall speed and
+tube length it is not really sufficient. A more advanced analysis needs to be constructed which
+accounts for actual passenger G-load constraints and can derive an optimal route and speed profile for
+a given design.</p>
+<div class="figure align-center">
+<img alt="hyperloop velocity profile" src="images/velocity_profile.png" />
+<p class="caption">Velocity profile given in the original proposal</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Future Modeling Road Map</a><ul>
+<li><a class="reference internal" href="#system-design-optimization">System Design Optimization</a></li>
+<li><a class="reference internal" href="#geometry">Geometry</a></li>
+<li><a class="reference internal" href="#battery-and-motors">Battery and Motors</a></li>
+<li><a class="reference internal" href="#air-bearings">Air Bearings</a></li>
+<li><a class="reference internal" href="#vacuum-pumps">Vacuum Pumps</a></li>
+<li><a class="reference internal" href="#solar-power-generation">Solar Power Generation</a></li>
+<li><a class="reference internal" href="#pod-structural-design">Pod Structural Design</a></li>
+<li><a class="reference internal" href="#component-mass-estimation">Component Mass Estimation</a></li>
+<li><a class="reference internal" href="#linear-accelerators">Linear Accelerators</a></li>
+<li><a class="reference internal" href="#route-optimization">Route Optimization</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="baseline.html"
+                        title="previous chapter">Baseline Design</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="contribute.html"
+                        title="next chapter">Code Contribution</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="sources/future.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="contribute.html" title="Code Contribution"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="baseline.html" title="Baseline Design"
+             >previous</a> |</li>
+        <li><a href="index.html">hyperloop 0.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

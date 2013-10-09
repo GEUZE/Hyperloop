@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>hyperloop.tube_wall_temp &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for hyperloop.tube_wall_temp</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    tubeModel.py - </span>
+<span class="sd">        Determines the steady state temperature of the hyperloop tube.</span>
+<span class="sd">        Calculates Q released/absorbed by hyperloop tube due to:</span>
+<span class="sd">        Internal Convection, Tube Conduction, Ambient Natural Convection, Solar Flux In, Radiation Out</span>
+<span class="sd">        </span>
+<span class="sd">    -original calculations from Jeff Berton, ported and extended by Jeff Chin</span>
+
+<span class="sd">    Compatible with OpenMDAO v0.8.1</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">e</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Assembly</span><span class="p">,</span> <span class="n">Component</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.drivers.api</span> <span class="kn">import</span> <span class="n">BroydenSolver</span> 
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Bool</span>
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">convert_units</span> <span class="k">as</span> <span class="n">cu</span>
+
+<span class="kn">from</span> <span class="nn">pycycle.api</span> <span class="kn">import</span> <span class="n">FlowStation</span>
+
+
+<div class="viewcode-block" id="TubeWallTemp"><a class="viewcode-back" href="../../srcdocs.html#hyperloop.tube_wall_temp.TubeWallTemp">[docs]</a><span class="k">class</span> <span class="nc">TubeWallTemp</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Calculates Q released/absorbed by the hyperloop tube &quot;&quot;&quot;</span>
+    <span class="c">#--Inputs--</span>
+    <span class="c">#Hyperloop Parameters/Design Variables</span>
+    <span class="n">diameter_outer_tube</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">2.23</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;tube outer diameter&#39;</span><span class="p">)</span> <span class="c">#7.3ft</span>
+    <span class="n">length_tube</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">482803</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Length of entire Hyperloop&#39;</span><span class="p">)</span> <span class="c">#300 miles, 1584000ft</span>
+    <span class="n">num_pods</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">34</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Number of Pods in the Tube at a given time&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">temp_boundary</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">322.0</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Average Temperature of the tube wall&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">temp_outside_ambient</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">305.6</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Average Temperature of the outside air&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">nozzle_air</span> <span class="o">=</span> <span class="n">FlowStation</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air exiting the pod nozzle&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="n">bearing_air</span> <span class="o">=</span> <span class="n">FlowStation</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air exiting the air bearings&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="c">#constants</span>
+    <span class="n">solar_insolation</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1000.</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W/m**2&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;solar irradiation at sea level on a clear day&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">nn_incidence_factor</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Non-normal incidence factor&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">surface_reflectance</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Solar Reflectance Index&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">q_per_area_solar</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">350.</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W/m**2&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Solar Heat Rate Absorbed per Area&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">q_total_solar</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">375989751.</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Solar Heat Absorbed by Tube&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">emissivity_tube</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Emmissivity of the Tube&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">sb_constant</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.00000005670373</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W/((m**2)*(K**4))&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Stefan-Boltzmann Constant&#39;</span><span class="p">)</span> <span class="c">#</span>
+
+    <span class="c">#--Outputs--</span>
+    <span class="n">area_rad</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">337486.1</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m**2&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Tube Radiating Area&#39;</span><span class="p">)</span> <span class="c">#    </span>
+    <span class="c">#Required for Natural Convection Calcs</span>
+    <span class="n">GrDelTL3</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1946216.7</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;1/((ft**3)*F)&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">Pr</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.707</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">Gr</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">12730351223.</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">Ra</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">8996312085.</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">Nu</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">232.4543713</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.02655</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W/(m*K)&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.845464094</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W/((m**2)*K)&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">area_convection</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">3374876.115</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Convection Area&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="c">#Natural Convection</span>
+    <span class="n">q_per_area_nat_conv</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">7.9</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W/(m**2)&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated per Area to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">total_q_nat_conv</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">286900419.</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Total Heat Radiated to the outside via Natural Convection&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="c">#Exhausted from Pods</span>
+    <span class="n">heat_rate_pod</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">519763</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heating Due to a Single Pods&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">total_heat_rate_pods</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">17671942.</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heating Due to a All Pods&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="c">#Radiated Out</span>
+    <span class="n">q_rad_per_area</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">31.6</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W/(m**2)&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">q_rad_tot</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">106761066.5</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Radiated to the outside&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="c">#Radiated In</span>
+    <span class="n">viewing_angle</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">1074256</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;m**2&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Effective Area hit by Sun&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="c">#Total Heating</span>
+    <span class="n">q_total_out</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">286900419.</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Total Heat Released via Radiation and Natural Convection&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="n">q_total_in</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">286900419.</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Total Heat Absorbed/Added via Pods and Solar Absorption&#39;</span><span class="p">)</span> <span class="c">#</span>
+    <span class="c">#Residual (for solver)</span>
+    <span class="n">ss_temp_residual</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">units</span> <span class="o">=</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Residual of T_released - T_absorbed&#39;</span><span class="p">)</span>
+  
+<div class="viewcode-block" id="TubeWallTemp.execute"><a class="viewcode-back" href="../../srcdocs.html#hyperloop.tube_wall_temp.TubeWallTemp.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate Various Paramters&quot;&quot;&quot;</span>
+        
+        <span class="n">bearing_q</span> <span class="o">=</span> <span class="n">cu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bearing_air</span><span class="o">.</span><span class="n">W</span><span class="p">,</span><span class="s">&#39;lbm/s&#39;</span><span class="p">,</span><span class="s">&#39;kg/s&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="n">cu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bearing_air</span><span class="o">.</span><span class="n">Cp</span><span class="p">,</span><span class="s">&#39;Btu/(lbm*degR)&#39;</span><span class="p">,</span><span class="s">&#39;J/(kg*K)&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">cu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bearing_air</span><span class="o">.</span><span class="n">Tt</span><span class="p">,</span><span class="s">&#39;degR&#39;</span><span class="p">,</span><span class="s">&#39;degK&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_boundary</span><span class="p">)</span>
+        <span class="n">nozzle_q</span> <span class="o">=</span> <span class="n">cu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nozzle_air</span><span class="o">.</span><span class="n">W</span><span class="p">,</span><span class="s">&#39;lbm/s&#39;</span><span class="p">,</span><span class="s">&#39;kg/s&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="n">cu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nozzle_air</span><span class="o">.</span><span class="n">Cp</span><span class="p">,</span><span class="s">&#39;Btu/(lbm*degR)&#39;</span><span class="p">,</span><span class="s">&#39;J/(kg*K)&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">cu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nozzle_air</span><span class="o">.</span><span class="n">Tt</span><span class="p">,</span><span class="s">&#39;degR&#39;</span><span class="p">,</span><span class="s">&#39;degK&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_boundary</span><span class="p">)</span>
+        <span class="c">#Q = mdot * cp * deltaT </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heat_rate_pod</span> <span class="o">=</span> <span class="n">nozzle_q</span> <span class="o">+</span><span class="n">bearing_q</span> 
+        <span class="c">#Total Q = Q * (number of pods)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_heat_rate_pods</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">heat_rate_pod</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">num_pods</span>
+
+        <span class="c">#Determine thermal resistance of outside via Natural Convection or forced convection</span>
+        <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">GrDelTL3</span> <span class="o">=</span> <span class="mi">41780000000000000000</span><span class="o">*</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">4.639</span><span class="p">))</span> <span class="c">#SI units (https://mdao.grc.nasa.gov/publications/Berton-Thesis.pdf pg51)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">GrDelTL3</span> <span class="o">=</span> <span class="mi">4985000000000000000</span><span class="o">*</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">4.284</span><span class="p">))</span> <span class="c">#SI units (https://mdao.grc.nasa.gov/publications/Berton-Thesis.pdf pg51)</span>
+        
+        <span class="c">#Prandtl Number</span>
+        <span class="c">#Pr = viscous diffusion rate/ thermal diffusion rate = Cp * dyanamic viscosity / thermal conductivity</span>
+        <span class="c">#Pr &lt;&lt; 1 means thermal diffusivity dominates</span>
+        <span class="c">#Pr &gt;&gt; 1 means momentum diffusivity dominates</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Pr</span> <span class="o">=</span> <span class="mf">1.23</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.09685</span><span class="p">))</span> <span class="c">#SI units (https://mdao.grc.nasa.gov/publications/Berton-Thesis.pdf pg51)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Pr</span> <span class="o">=</span> <span class="mf">0.59</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="o">**</span><span class="p">(</span><span class="mf">0.0239</span><span class="p">))</span>
+        <span class="c">#Grashof Number</span>
+        <span class="c">#Relationship between buoyancy and viscosity</span>
+        <span class="c">#Laminar = Gr &lt; 10^8</span>
+        <span class="c">#Turbulent = Gr &gt; 10^9</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Gr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">GrDelTL3</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_boundary</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diameter_outer_tube</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+        <span class="c">#Rayleigh Number </span>
+        <span class="c">#Buoyancy driven flow (natural convection)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ra</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Pr</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gr</span>
+        <span class="c">#Nusselt Number</span>
+        <span class="c">#Nu = convecive heat transfer / conductive heat transfer</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Ra</span><span class="o">&lt;=</span><span class="mi">10</span><span class="o">**</span><span class="mi">12</span><span class="p">):</span> <span class="c">#valid in specific flow regime</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Nu</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.6</span> <span class="o">+</span> <span class="mf">0.387</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Ra</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">6.</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mf">0.559</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">Pr</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">9.</span><span class="o">/</span><span class="mf">16.</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">8.</span><span class="o">/</span><span class="mf">27.</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="c">#3rd Ed. of Introduction to Heat Transfer by Incropera and DeWitt, equations (9.33) and (9.34) on page 465</span>
+        <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="mf">0.0001423</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="o">**</span><span class="p">(</span><span class="mf">0.9138</span><span class="p">))</span> <span class="c">#SI units (https://mdao.grc.nasa.gov/publications/Berton-Thesis.pdf pg51)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="mf">0.0002494</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="o">**</span><span class="p">(</span><span class="mf">0.8152</span><span class="p">))</span>
+        <span class="c">#h = k*Nu/Characteristic Length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nu</span><span class="p">)</span><span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">diameter_outer_tube</span>
+        <span class="c">#Convection Area = Surface Area</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area_convection</span> <span class="o">=</span> <span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_tube</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">diameter_outer_tube</span> 
+        <span class="c">#Determine heat radiated per square meter (Q)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_per_area_nat_conv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_boundary</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="p">)</span>
+        <span class="c">#Determine total heat radiated over entire tube (Qtotal)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_q_nat_conv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_per_area_nat_conv</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_convection</span>
+        <span class="c">#Determine heat incoming via Sun radiation (Incidence Flux)</span>
+        <span class="c">#Sun hits an effective rectangular cross section</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area_viewing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_tube</span><span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">diameter_outer_tube</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_per_area_solar</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">surface_reflectance</span><span class="p">)</span><span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nn_incidence_factor</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">solar_insolation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_total_solar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_per_area_solar</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_viewing</span>
+        <span class="c">#Determine heat released via radiation</span>
+        <span class="c">#Radiative area = surface area</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area_rad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_convection</span>
+        <span class="c">#P/A = SB*emmisitivity*(T^4 - To^4)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_rad_per_area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sb_constant</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">emissivity_tube</span><span class="o">*</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_boundary</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="o">**</span><span class="mi">4</span><span class="p">))</span>
+        <span class="c">#P = A * (P/A)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_rad_tot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_rad</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_rad_per_area</span>
+        <span class="c">#------------</span>
+        <span class="c">#Sum Up</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_total_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_rad_tot</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_q_nat_conv</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">q_total_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_total_solar</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_heat_rate_pods</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">ss_temp_residual</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">q_total_out</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_total_in</span><span class="p">)</span><span class="o">/</span><span class="mf">1e6</span>
+
+<span class="c">#run stand-alone component</span></div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">set_as_top</span>
+
+
+    <span class="k">class</span> <span class="nc">TubeHeatBalance</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+        <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="n">tm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;tm&#39;</span><span class="p">,</span> <span class="n">TubeWall</span><span class="p">())</span>
+            <span class="c">#tm.bearing_air.setTotalTP()</span>
+            <span class="n">driver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;driver&#39;</span><span class="p">,</span><span class="n">BroydenSolver</span><span class="p">())</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;tm.temp_boundary&#39;</span><span class="p">,</span><span class="n">low</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">high</span><span class="o">=</span><span class="mf">10000.</span><span class="p">)</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s">&#39;tm.ss_temp_residual=0&#39;</span><span class="p">)</span>
+
+            <span class="n">driver</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="s">&#39;tm&#39;</span><span class="p">])</span>
+
+    <span class="n">test</span> <span class="o">=</span> <span class="n">TubeHeatBalance</span><span class="p">()</span>
+    <span class="n">set_as_top</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+
+    <span class="c">#set input values</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">nozzle_air</span><span class="o">.</span><span class="n">setTotalTP</span><span class="p">(</span><span class="mi">1710</span><span class="p">,</span> <span class="mf">0.304434211</span><span class="p">)</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">nozzle_air</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="mf">1.08</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">bearing_air</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">diameter_outer_tube</span> <span class="o">=</span> <span class="mf">2.22504</span><span class="c">#, units = &#39;m&#39;, iotype=&#39;in&#39;, desc=&#39;Tube out diameter&#39;) #7.3ft</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">length_tube</span> <span class="o">=</span> <span class="mf">482803.</span><span class="c">#, units = &#39;m&#39;, iotype=&#39;in&#39;, desc=&#39;Length of entire Hyperloop&#39;) #300 miles, 1584000ft</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">num_pods</span> <span class="o">=</span> <span class="mf">34.</span><span class="c">#, units = &#39;K&#39;, iotype=&#39;in&#39;, desc=&#39;Number of Pods in the Tube at a given time&#39;) #</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_boundary</span> <span class="o">=</span> <span class="mi">340</span><span class="c">#, units = &#39;K&#39;, iotype=&#39;in&#39;, desc=&#39;Average Temperature of the tube&#39;) #</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_outside_ambient</span> <span class="o">=</span> <span class="mf">305.6</span><span class="c">#, units = &#39;K&#39;, iotype=&#39;in&#39;, desc=&#39;Average Temperature of the outside air&#39;) #</span>
+
+    <span class="n">test</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+    <span class="k">print</span> <span class="s">&quot;-----Completed Tube Heat Flux Model Calculations---&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;&quot;</span>
+    <span class="k">print</span> <span class="s">&quot;CompressQ-{} SolarQ-{} RadQ-{} ConvecQ-{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">total_heat_rate_pods</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_solar</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_rad_tot</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">total_q_nat_conv</span> <span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;Equilibrium Wall Temperature: {} K or {} F&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_boundary</span><span class="p">,</span> <span class="n">cu</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_boundary</span><span class="p">,</span><span class="s">&#39;degK&#39;</span><span class="p">,</span><span class="s">&#39;degF&#39;</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&quot;Ambient Temperature:          {} K or {} F&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="p">,</span> <span class="n">cu</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_outside_ambient</span><span class="p">,</span><span class="s">&#39;degK&#39;</span><span class="p">,</span><span class="s">&#39;degF&#39;</span><span class="p">))</span>
+    <span class="k">print</span> <span class="s">&quot;Q Out = {} W  ==&gt;  Q In = {} W ==&gt; Error: {}%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_out</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_in</span><span class="p">,((</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_out</span><span class="o">-</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_in</span><span class="p">)</span><span class="o">/</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_out</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

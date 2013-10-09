@@ -1,0 +1,135 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>hyperloop.cycle.pump &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../../static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for hyperloop.cycle.pump</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span>
+
+
+<div class="viewcode-block" id="Pump"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.cycle.pump.Pump">[docs]</a><span class="k">class</span> <span class="nc">Pump</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span> 
+    <span class="sd">&quot;&quot;&quot;Calculate the power requirement for a water pump given flow conditions&quot;&quot;&quot;</span> 
+
+    <span class="n">Pt_out</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kPa&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Pump output pressure&quot;</span><span class="p">)</span>
+    <span class="n">Pt_in</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kPa&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Pump input pressure&quot;</span><span class="p">)</span>
+    <span class="n">Tt</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">288</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;K&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;water temperature at the pump inlet&quot;</span><span class="p">)</span>
+    <span class="n">W</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kg/s&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;liquid flow rate&quot;</span><span class="p">)</span>
+    <span class="n">eff</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">8</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">pwr_req</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kW&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;power required to drive the pump&quot;</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="nb">super</span><span class="p">(</span><span class="n">Pump</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="n">_temps</span> <span class="o">=</span> <span class="p">[</span><span class="mf">273.15</span><span class="p">,</span>  <span class="mf">277.15</span><span class="p">,</span>  <span class="mf">283.15</span><span class="p">,</span>  <span class="mf">293.15</span><span class="p">,</span>  <span class="mf">303.15</span><span class="p">,</span>  <span class="mf">313.15</span><span class="p">,</span>  <span class="mf">323.15</span><span class="p">,</span> <span class="mf">333.15</span><span class="p">,</span>  <span class="mf">343.15</span><span class="p">,</span>  <span class="mf">353.15</span><span class="p">,</span>  <span class="mf">363.15</span><span class="p">,</span>  <span class="mf">373.15</span><span class="p">]</span> <span class="c">#degrees K</span>
+        <span class="n">_rhos</span> <span class="o">=</span>  <span class="p">[</span><span class="mf">999.8</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span><span class="mf">999.7</span><span class="p">,</span><span class="mf">998.2</span><span class="p">,</span><span class="mf">995.7</span><span class="p">,</span><span class="mf">992.2</span><span class="p">,</span><span class="mf">988.1</span><span class="p">,</span><span class="mf">983.2</span><span class="p">,</span><span class="mf">977.8</span><span class="p">,</span><span class="mf">971.8</span><span class="p">,</span><span class="mf">965.3</span><span class="p">,</span><span class="mf">958.4</span><span class="p">]</span> <span class="c">#kg/m**3</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rho</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">_temps</span><span class="p">,</span> <span class="n">_rhos</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Pump.execute"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.cycle.pump.Pump.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="n">_rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rho</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Tt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pwr_req</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span><span class="o">/</span><span class="n">_rho</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Pt_out</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Pt_in</span><span class="p">)</span>
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">set_as_top</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">set_as_top</span><span class="p">(</span><span class="n">Pump</span><span class="p">())</span>
+
+    <span class="n">p</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+    <span class="k">print</span> <span class="n">p</span><span class="o">.</span><span class="n">pwr_req</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

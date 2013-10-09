@@ -1,0 +1,239 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>hyperloop.cycle.heat_exchanger &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../../static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for hyperloop.cycle.heat_exchanger</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Originally built by Scott Jones in NPSS, ported and augmented by Jeff Chin   </span>
+
+<span class="sd">NTU (effectiveness) Method</span>
+<span class="sd">Determine the heat transfer rate and outlet temperatures when the type and size of the heat exchanger is specified.</span>
+
+<span class="sd">NTU Limitations</span>
+<span class="sd">1) Effectiveness of the chosen heat exchanger must be known (empirical)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">e</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Assembly</span><span class="p">,</span> <span class="n">Component</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Bool</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.drivers.api</span> <span class="kn">import</span> <span class="n">BroydenSolver</span> 
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">convert_units</span> <span class="k">as</span> <span class="n">cu</span>
+
+<span class="kn">from</span> <span class="nn">pycycle.api</span> <span class="kn">import</span> <span class="n">FlowStation</span><span class="p">,</span> <span class="n">AirFlowStation</span><span class="p">,</span> <span class="n">CycleComponent</span>
+
+
+<div class="viewcode-block" id="HeatExchanger"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.cycle.heat_exchanger.HeatExchanger">[docs]</a><span class="k">class</span> <span class="nc">HeatExchanger</span><span class="p">(</span><span class="n">CycleComponent</span><span class="p">):</span> 
+    <span class="sd">&quot;&quot;&quot;Calculates required Q to reach perscribed temperatures for a water-to-air heat exchanger&quot;&quot;&quot;</span>
+
+    <span class="c">#inputs</span>
+    <span class="n">W_cold</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.45</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;kg/s&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Mass flow rate of cold fluid (water)&#39;</span><span class="p">)</span> 
+    <span class="c">#Wh = Float(iotype=&quot;in&quot;, units = &#39;kg/s&#39;, desc=&#39;Mass flow rate of the hot fluid (air)&#39;) </span>
+    <span class="n">Cp_cold</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">4186</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;J/(kg*K)&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Specific Heat of the cold fluid (water)&#39;</span><span class="p">)</span> 
+    <span class="c">#Cp_hot = Float(iotype=&quot;in&quot;, units = &#39;J/(kg*K)&#39;, desc=&#39;Specific Heat of the hot fluid (air)&#39;) </span>
+    <span class="c">#T_hot_in = Float(iotype=&quot;in&quot;, units = &#39;K&#39;, desc=&#39;Temp of air into heat exchanger&#39;)     </span>
+    <span class="n">T_cold_in</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">288.1</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Temp of water into heat exchanger&#39;</span><span class="p">)</span> 
+    <span class="n">effectiveness</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">9765</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Heat Exchange Effectiveness&#39;</span><span class="p">)</span> 
+    <span class="n">MNexit_des</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">6</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;mach number at the exit of heat exchanger&quot;</span><span class="p">)</span>
+    <span class="c">#State Vars</span>
+    <span class="n">T_hot_out</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">338.4</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Temp of air out of the heat exchanger&#39;</span><span class="p">)</span>    
+    <span class="n">T_cold_out</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Temp of water out of the heat exchanger&#39;</span><span class="p">)</span> 
+    
+
+    <span class="n">Fl_I</span> <span class="o">=</span> <span class="n">FlowStation</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;incoming air stream to heat exchanger&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+
+    <span class="c">#outputs</span>
+    <span class="n">Qreleased</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Energy Released&#39;</span><span class="p">)</span> 
+    <span class="n">Qabsorbed</span><span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Energy Absorbed&#39;</span><span class="p">)</span> 
+    <span class="n">LMTD</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Logarathmic Mean Temperature Difference&#39;</span><span class="p">)</span>
+    <span class="n">Qmax</span><span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="s">&#39;W&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Theoretical maximum possible heat transfer&#39;</span><span class="p">)</span> 
+ 
+    <span class="n">residual_qmax</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Residual of max*effectiveness&#39;</span><span class="p">)</span> 
+    <span class="n">residual_e_balance</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Residual of the energy balance&#39;</span><span class="p">)</span>
+
+    <span class="n">Fl_O</span> <span class="o">=</span> <span class="n">FlowStation</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;outgoing air stream from heat exchanger&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="HeatExchanger.execute"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.cycle.heat_exchanger.HeatExchanger.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate Various Paramters&quot;&quot;&quot;</span>
+
+        <span class="n">Fl_I</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Fl_I</span>
+        <span class="n">Fl_O</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Fl_O</span>
+
+        <span class="n">T_cold_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_cold_in</span>
+        <span class="n">T_cold_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_cold_out</span>
+        <span class="n">T_hot_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Fl_I</span><span class="o">.</span><span class="n">Tt</span><span class="o">*.</span><span class="mi">555555556</span> <span class="c"># R to K</span>
+        <span class="n">T_hot_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_hot_out</span>
+        <span class="n">W_cold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">W_cold</span>
+        <span class="n">Wh</span> <span class="o">=</span> <span class="n">Fl_I</span><span class="o">.</span><span class="n">W</span>
+        <span class="n">Cp_hot</span> <span class="o">=</span> <span class="n">Fl_I</span><span class="o">.</span><span class="n">Cp</span><span class="o">/</span><span class="mf">2.388459e-1</span> <span class="c">#BTU/lbm-C to Kj/kg-k</span>
+        <span class="n">Cp_cold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cp_cold</span>
+        
+        <span class="n">W_coldCpMin</span> <span class="o">=</span> <span class="n">W_cold</span><span class="o">*</span><span class="n">Cp_cold</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="n">Wh</span><span class="o">*</span><span class="n">Cp_hot</span> <span class="o">&lt;</span> <span class="n">W_cold</span><span class="o">*</span><span class="n">Cp_cold</span> <span class="p">):</span>
+            <span class="n">W_coldCpMin</span> <span class="o">=</span> <span class="n">Wh</span><span class="o">*</span><span class="n">Cp_hot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Qmax</span> <span class="o">=</span> <span class="n">W_coldCpMin</span><span class="o">*</span><span class="p">(</span><span class="n">T_hot_in</span> <span class="o">-</span> <span class="n">T_cold_in</span><span class="p">);</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Qreleased</span> <span class="o">=</span> <span class="n">Wh</span><span class="o">*</span><span class="n">Cp_hot</span><span class="o">*</span><span class="p">(</span><span class="n">T_hot_in</span> <span class="o">-</span> <span class="n">T_hot_out</span><span class="p">);</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Qabsorbed</span> <span class="o">=</span> <span class="n">W_cold</span><span class="o">*</span><span class="n">Cp_cold</span><span class="o">*</span><span class="p">(</span><span class="n">T_cold_out</span> <span class="o">-</span> <span class="n">T_cold_in</span><span class="p">);</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">LMTD</span> <span class="o">=</span> <span class="p">((</span><span class="n">T_hot_out</span><span class="o">-</span><span class="n">T_hot_in</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">T_cold_out</span><span class="o">-</span><span class="n">T_cold_in</span><span class="p">))</span><span class="o">/</span><span class="n">log</span><span class="p">((</span><span class="n">T_hot_out</span><span class="o">-</span><span class="n">T_cold_in</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">T_hot_in</span><span class="o">-</span><span class="n">T_cold_out</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">residual_qmax</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Qreleased</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">effectiveness</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Qmax</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">residual_e_balance</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Qreleased</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Qabsorbed</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span>
+
+        <span class="n">Fl_O</span><span class="o">.</span><span class="n">setTotalTP</span><span class="p">(</span><span class="n">T_hot_out</span><span class="o">*</span><span class="mf">1.8</span><span class="p">,</span> <span class="n">Fl_I</span><span class="o">.</span><span class="n">Pt</span><span class="p">)</span>
+        <span class="n">Fl_O</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="n">Fl_I</span><span class="o">.</span><span class="n">W</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_design</span><span class="p">:</span> 
+            <span class="n">Fl_O</span><span class="o">.</span><span class="n">Mach</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MNexit_des</span>  
+            <span class="bp">self</span><span class="o">.</span><span class="n">_exit_area_des</span> <span class="o">=</span> <span class="n">Fl_O</span><span class="o">.</span><span class="n">area</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">Fl_O</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exit_area_des</span>
+ </div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">set_as_top</span>
+     
+
+    <span class="k">class</span> <span class="nc">HeatBalance</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+        <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+            <span class="n">hx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;hx&#39;</span><span class="p">,</span> <span class="n">HeatExchanger</span><span class="p">())</span>
+            <span class="n">driver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;driver&#39;</span><span class="p">,</span><span class="n">BroydenSolver</span><span class="p">())</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;hx.T_hot_out&#39;</span><span class="p">,</span><span class="n">low</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">high</span><span class="o">=</span><span class="mf">1000.</span><span class="p">)</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;hx.T_cold_out&#39;</span><span class="p">,</span><span class="n">low</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">high</span><span class="o">=</span><span class="mf">1000.</span><span class="p">)</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s">&#39;hx.residual_qmax=0&#39;</span><span class="p">)</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s">&#39;hx.residual_e_balance=0&#39;</span><span class="p">)</span>
+
+            <span class="c">#hx.Wh = 0.49</span>
+            <span class="c">#hx.Cp_hot = 1.006</span>
+            <span class="c">#hx.T_hot_in = 791</span>
+            <span class="n">fs</span> <span class="o">=</span> <span class="n">AirFlowStation</span><span class="p">()</span>
+            <span class="n">fs</span><span class="o">.</span><span class="n">setTotalTP</span><span class="p">(</span><span class="mf">1423.8</span><span class="p">,</span> <span class="mf">0.302712118187</span><span class="p">)</span> <span class="c">#R, psi</span>
+            <span class="n">fs</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="o">.</span><span class="mi">49</span>
+            <span class="n">hx</span><span class="o">.</span><span class="n">Fl_I</span> <span class="o">=</span> <span class="n">fs</span>
+            <span class="n">hx</span><span class="o">.</span><span class="n">W_cold</span> <span class="o">=</span> <span class="mf">0.45</span>
+            <span class="n">hx</span><span class="o">.</span><span class="n">Cp_cold</span> <span class="o">=</span> <span class="mf">4.186</span>
+            <span class="n">hx</span><span class="o">.</span><span class="n">T_cold_in</span> <span class="o">=</span> <span class="mf">288.15</span>
+            <span class="n">effectiveness</span> <span class="o">=</span> <span class="mf">0.9765</span>
+
+            <span class="c">#initial guess</span>
+            <span class="n">avg</span> <span class="o">=</span> <span class="p">(</span> <span class="n">hx</span><span class="o">.</span><span class="n">Fl_I</span><span class="o">.</span><span class="n">Tt</span><span class="o">*.</span><span class="mi">555555556</span> <span class="o">+</span> <span class="n">hx</span><span class="o">.</span><span class="n">T_cold_in</span> <span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="n">hx</span><span class="o">.</span><span class="n">T_cold_out</span> <span class="o">=</span> <span class="n">avg</span>
+            <span class="n">hx</span><span class="o">.</span><span class="n">T_hot_out</span> <span class="o">=</span> <span class="n">avg</span>  
+
+            <span class="n">driver</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="s">&#39;hx&#39;</span><span class="p">])</span>
+
+    <span class="n">test</span> <span class="o">=</span> <span class="n">HeatBalance</span><span class="p">()</span>  
+    <span class="n">set_as_top</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">design</span> <span class="o">=</span> <span class="bp">True</span>
+
+
+    <span class="c">#good values: </span>
+    <span class="c">#air:      Tin       Tout         Q      Q&#39; </span>
+    <span class="c">#791.0    299.966975    242.049819343    247.874879</span>
+    <span class="c">#water:    Tin       Tout         Q      Q&#39; </span>
+    <span class="c">#288.15    416.647010853    242.049819343    247.874879</span>
+
+    <span class="k">print</span> <span class="s">&quot;&quot;</span>
+    <span class="n">test</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">print</span>  <span class="s">&quot;air:      Tin       Tout         Q      Q</span><span class="se">\&#39;</span><span class="s"> </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+    <span class="k">print</span> <span class="s">&quot;    {}    {}    {}    {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">Fl_I</span><span class="o">.</span><span class="n">Tt</span><span class="o">*.</span><span class="mi">555555556</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">T_hot_out</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">Qreleased</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">Qmax</span><span class="p">)</span>
+
+    <span class="k">print</span> 
+    <span class="k">print</span> <span class="s">&quot;water:    Tin       Tout         Q      Q</span><span class="se">\&#39;</span><span class="s"> </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+    <span class="k">print</span> <span class="s">&quot;    {}    {}    {}    {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">T_cold_in</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">T_cold_out</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">Qabsorbed</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">Qmax</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot; LMTD = {}  &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">hx</span><span class="o">.</span><span class="n">LMTD</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,155 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>hyperloop.test.test_tube_temp &mdash; hyperloop 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../../static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="hyperloop 0.5 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for hyperloop.test.test_tube_temp</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">unittest</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">set_as_top</span><span class="p">,</span> <span class="n">Assembly</span>
+<span class="kn">from</span> <span class="nn">openmdao.util.testutil</span> <span class="kn">import</span> <span class="n">assert_rel_error</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.drivers.api</span> <span class="kn">import</span> <span class="n">BroydenSolver</span>
+<span class="kn">from</span> <span class="nn">hyperloop.tube_wall_temp</span> <span class="kn">import</span> <span class="n">TubeWallTemp</span>
+
+
+<div class="viewcode-block" id="TubeHeatBalance"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.test.test_tube_temp.TubeHeatBalance">[docs]</a><span class="k">class</span> <span class="nc">TubeHeatBalance</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+
+<div class="viewcode-block" id="TubeHeatBalance.configure"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.test.test_tube_temp.TubeHeatBalance.configure">[docs]</a>    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">tm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;tm&#39;</span><span class="p">,</span> <span class="n">TubeWallTemp</span><span class="p">())</span>
+        <span class="c">#tm.bearing_air.setTotalTP()</span>
+        <span class="n">driver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;driver&#39;</span><span class="p">,</span><span class="n">BroydenSolver</span><span class="p">())</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;tm.temp_boundary&#39;</span><span class="p">,</span><span class="n">low</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">high</span><span class="o">=</span><span class="mf">10000.</span><span class="p">)</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">add_constraint</span><span class="p">(</span><span class="s">&#39;tm.ss_temp_residual=0&#39;</span><span class="p">)</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="s">&#39;tm&#39;</span><span class="p">])</span>
+
+</div></div>
+<div class="viewcode-block" id="TubeWallTestCase"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.test.test_tube_temp.TubeWallTestCase">[docs]</a><span class="k">class</span> <span class="nc">TubeWallTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+    
+<div class="viewcode-block" id="TubeWallTestCase.test_tube_temp"><a class="viewcode-back" href="../../../srcdocs.html#hyperloop.test.test_tube_temp.TubeWallTestCase.test_tube_temp">[docs]</a>    <span class="k">def</span> <span class="nf">test_tube_temp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        
+        <span class="n">test</span> <span class="o">=</span> <span class="n">set_as_top</span><span class="p">(</span><span class="n">TubeHeatBalance</span><span class="p">())</span>
+        <span class="c">#set input values</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">nozzle_air</span><span class="o">.</span><span class="n">setTotalTP</span><span class="p">(</span><span class="mi">1710</span><span class="p">,</span> <span class="mf">0.304434211</span><span class="p">)</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">nozzle_air</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="mf">1.08</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">bearing_air</span><span class="o">.</span><span class="n">W</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">diameter_outer_tube</span> <span class="o">=</span> <span class="mf">2.22504</span><span class="c">#, units = &#39;m&#39;, iotype=&#39;in&#39;, desc=&#39;Tube out diameter&#39;) #7.3ft</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">length_tube</span> <span class="o">=</span> <span class="mf">482803.</span><span class="c">#, units = &#39;m&#39;, iotype=&#39;in&#39;, desc=&#39;Length of entire Hyperloop&#39;) #300 miles, 1584000ft</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">num_pods</span> <span class="o">=</span> <span class="mf">34.</span><span class="c">#, units = &#39;K&#39;, iotype=&#39;in&#39;, desc=&#39;Number of Pods in the Tube at a given time&#39;) #</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_boundary</span> <span class="o">=</span> <span class="mf">322.361</span><span class="c">#, units = &#39;K&#39;, iotype=&#39;in&#39;, desc=&#39;Average Temperature of the tube&#39;) #</span>
+        <span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">temp_outside_ambient</span> <span class="o">=</span> <span class="mf">305.6</span><span class="c">#, units = &#39;K&#39;, iotype=&#39;in&#39;, desc=&#39;Average Temperature of the outside air&#39;) #</span>
+
+        <span class="n">test</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">heat_rate_pod</span><span class="p">,</span> <span class="mf">353244.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">total_heat_rate_pods</span><span class="p">,</span><span class="mf">12010290.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">GrDelTL3</span><span class="p">,</span><span class="mi">123775609</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">Pr</span><span class="p">,</span><span class="mf">0.707</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">Gr</span><span class="p">,</span><span class="mf">23163846280.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">Ra</span><span class="p">,</span><span class="mf">16369476896.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">Nu</span><span class="p">,</span><span class="mf">281.6714</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span> <span class="c">#http://www.egr.msu.edu/~somerton/Nusselt/ii/ii_a/ii_a_3/ii_a_3_a.html</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">k</span><span class="p">,</span><span class="mf">0.02655</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">h</span><span class="p">,</span><span class="mf">3.3611</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">area_convection</span><span class="p">,</span><span class="mi">3374876</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_per_area_nat_conv</span><span class="p">,</span><span class="mf">57.10</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">total_q_nat_conv</span><span class="p">,</span><span class="mi">192710349</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">area_viewing</span><span class="p">,</span><span class="mf">1074256.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_per_area_solar</span><span class="p">,</span><span class="mf">350.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_solar</span><span class="p">,</span><span class="mf">375989751.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">area_rad</span><span class="p">,</span><span class="mf">3374876.115</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_rad_per_area</span><span class="p">,</span><span class="mf">59.7</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_rad_tot</span><span class="p">,</span><span class="mi">201533208</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">test</span><span class="o">.</span><span class="n">tm</span><span class="o">.</span><span class="n">q_total_out</span><span class="p">,</span><span class="mf">394673364.</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">)</span>
+
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">hyperloop 0.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Oct 09, 2013.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
